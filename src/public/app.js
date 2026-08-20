@@ -111,10 +111,9 @@ function matches(o) {
 
 /* ---------------- Multi-select dropdown ---------------- */
 
-function makeDropdown(key, itemsFn, getSelectedLabel) {
+function makeDropdown(key, selected, itemsFn, getSelectedLabel) {
   const trigger = document.querySelector(`[data-dd="${key}"]`);
   const panel = document.getElementById(`${key}-panel`);
-  const selected = state[key];
 
   function renderItems() {
     const items = itemsFn();
@@ -374,6 +373,7 @@ let areaDropdown = null;
 function initControls() {
   tentDropdown = makeDropdown(
     "tent",
+    state.tents,
     () =>
       dedupe(OPTIONS.map((o) => o.portalId))
         .map((id) => {
@@ -386,6 +386,7 @@ function initControls() {
   );
   areaDropdown = makeDropdown(
     "area",
+    state.areas,
     () => dedupe(OPTIONS.flatMap((o) => o.areas)).sort((a, b) => a.localeCompare(b)).map((a) => ({ value: a, label: a })),
     (n, count) =>
       n === 0 ? count ? "Alle Bereiche ▾" : "Keine Bereiche ▾" : n === 1 ? "1 Bereich ▾" : `${n} Bereiche ▾`,
