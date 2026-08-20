@@ -18,6 +18,8 @@ export interface ScrapeOptions {
   /** How many portals to scrape in parallel (default 2). */
   concurrency?: number;
   onProgress?: (message: string) => void;
+  /** Called as soon as a single portal finishes, so results can be streamed. */
+  onPortalResult?: (portal: PortalAvailability) => void;
 }
 
 function keepNonEmpty(options: SelectOption[]): SelectOption[] {
@@ -144,7 +146,9 @@ export async function scrapeAll(
   async function worker(): Promise<void> {
     while (next < portals.length) {
       const idx = next++;
-      results[idx] = await scrapePortal(portals[idx], opts);
+      const portal = await scrapePortal(portals[idx], opts);
+      results[idx] = portal;
+      opts.onPortalResult?.(portal);
     }
   }
 

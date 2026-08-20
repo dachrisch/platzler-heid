@@ -62,6 +62,47 @@ npm run build
 npm start
 ```
 
+### Webapp
+
+The dashboard (`GET /`) shows all available reservations across every portal and lets
+you filter by:
+
+- **Festzelt** (tent) — multi-select
+- **Datum von / bis** — date range
+- **Zeit** — toggle chips for *Mittag*, *Nachmittag*, *Abend*, *Frühstück*, *Warm Up*
+- **Bereich** (area) — multi-select
+- **Suche** — free text across tent, date, time slot and area
+- **Nur Wochenenden** toggle
+
+Results are grouped by date and the active filters are mirrored to the URL, so a view
+can be shared/bookmarked.
+
+Clicking **Aktualisieren** triggers a live scrape whose results are **streamed** to the
+browser via [Server-Sent Events](#api): each tent appears in the list as soon as it has
+been scraped (`3/10 Festzelte …`), instead of waiting for the whole run.
+
+### Scheduled scraping
+
+The server can re-scrape on an interval and stream the fresh results to all open
+browser tabs:
+
+```sh
+SCRAPE_INTERVAL_MIN=15 npm run serve
+```
+
+This scrapes once at startup and again every 15 minutes. The interval is shown in the
+page footer. The CLI always writes to `data/availability.json`, so scheduled runs keep
+the cache file fresh too.
+
+### Server environment variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PORT` | `3000` | HTTP port |
+| `THROTTLE_MS` | `600` | Delay between requests to a portal |
+| `CONCURRENCY` | `2` | Portals scraped in parallel |
+| `SCRAPE_INTERVAL_MIN` | `0` | Re-scrape interval in minutes (`0` disables) |
+
 ### CLI options
 
 | Flag | Description |
@@ -77,9 +118,21 @@ npm start
 The server exposes:
 
 - `GET /` — dashboard UI
-- `GET /api/availability` — last snapshot (JSON)
-- `GET /api/status` — scrape status / cache age
-- `POST /api/refresh` — trigger a scrape in the background
+- `GET /api/availability` — last snapshot (JSON, updated live during a scrape)
+- `GET /api/status` — scrape status / cache age / progress / schedule interval
+- `GET /api/stream` — Server-Sent Events stream (`snapshot`, `started`, `portal`, `done`)
+- `POST /api/refresh` — trigger a scrape; results are broadcast to all SSE clients
+
+SSE event flow during a refresh:
+
+```
+event: started   data: {"at":"...","total":10}
+event: portal    data: {"done":1,"total":10,"portal":{...}}   (repeated per tent)
+event: done      data: {"fetchedAt":"..."}
+```
+
+On connect, a `snapshot` event with the current data is sent immediately so the view
+renders instantly and only updates as new results stream in.
 
 ## Tests
 

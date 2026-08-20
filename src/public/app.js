@@ -10,6 +10,8 @@ const state = {
 
 let DATA = null;
 let OPTIONS = [];
+let streamActive = false;
+let progress = { done: 0, total: 0 };
 
 const SHIFT_COLORS = {
   Abend: "shift-abend",
@@ -109,32 +111,33 @@ function matches(o) {
 
 /* ---------------- Multi-select dropdown ---------------- */
 
-function makeDropdown(key, items, getLabel, getSelectedLabel) {
+function makeDropdown(key, itemsFn, getSelectedLabel) {
   const trigger = document.querySelector(`[data-dd="${key}"]`);
   const panel = document.getElementById(`${key}-panel`);
   const selected = state[key];
 
-  function updateTrigger() {
-    trigger.textContent = getSelectedLabel(selected.size);
-  }
-
   function renderItems() {
+    const items = itemsFn();
     panel.innerHTML = items
       .map(
         (item) =>
           `<label class="dd-item"><input type="checkbox" value="${escapeHtml(item.value)}" ${
             selected.has(item.value) ? "checked" : ""
-          } />${escapeHtml(getLabel(item))}</label>`,
+          } />${escapeHtml(item.label)}</label>`,
       )
       .join("");
     panel.querySelectorAll("input[type=checkbox]").forEach((cb) => {
       cb.addEventListener("change", () => {
         if (cb.checked) selected.add(cb.value);
         else selected.delete(cb.value);
-        updateTrigger();
         update();
       });
     });
+    updateTrigger(items.length);
+  }
+
+  function updateTrigger(count) {
+    trigger.textContent = getSelectedLabel(selected.size, count);
   }
 
   trigger.addEventListener("click", (e) => {
@@ -145,7 +148,7 @@ function makeDropdown(key, items, getLabel, getSelectedLabel) {
   });
 
   renderItems();
-  updateTrigger();
+  return { refresh: renderItems };
 }
 
 function closeAllDropdowns() {
@@ -154,10 +157,11 @@ function closeAllDropdowns() {
 
 /* ---------------- Shift chips ---------------- */
 
-function buildShiftChips(allShifts) {
+function buildShiftChips() {
   const wrap = document.getElementById("shift-chips");
+  const shifts = dedupe(OPTIONS.map((o) => o.shift)).sort((a, b) => a.localeCompare(b));
   wrap.innerHTML = "";
-  for (const shift of allShifts) {
+  for (const shift of shifts) {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "chip";
@@ -212,10 +216,9 @@ function renderSummary(filtered) {
   summary.innerHTML = active.length
     ? `Filter: ${escapeHtml(active.join(" · "))}`
     : "Keine Filter aktiv — alle verfügbaren Reservierungen";
-  const head = document.getElementById("result-head");
-  head.textContent = `${filtered.length} verfügbare Reservierung(en) in ${tents.size} Festzelt(en)`;
-  const shiftLine = document.getElementById("result-shifts");
-  shiftLine.textContent = shiftText;
+  document.getElementById("result-head").textContent =
+    `${filtered.length} verfügbare Reservierung(en) in ${tents.size} Festzelt(en)`;
+  document.getElementById("result-shifts").textContent = shiftText;
 }
 
 function groupByDate(options) {
@@ -277,25 +280,117 @@ function update() {
   renderResults();
 }
 
+/* ---------------- Data + streaming ---------------- */
+
+function updateFetchedAt(iso) {
+  if (!iso) return;
+  const d = new Date(iso);
+  const txt = d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  document.getElementById("fetched-at").textContent = "Zuletzt aktualisiert: " + txt;
+  document.getElementById("fetched-at-2").textContent = txt;
+}
+
+function updateRefreshButton() {
+  const btn = document.getElementById("refresh");
+  const progressEl = document.getElementById("progress");
+  if (streamActive) {
+    btn.disabled = true;
+    btn.textContent = progress.total
+      ? `Aktualisiere… ${progress.done}/${progress.total}`
+      : "Aktualisiere…";
+    progressEl.textContent = `Geladen: ${progress.done}/${progress.total} Festzelte`;
+  } else {
+    btn.disabled = false;
+    btn.textContent = "Aktualisieren";
+    progressEl.textContent = "";
+  }
+}
+
+function refreshDynamicControls() {
+  tentDropdown?.refresh();
+  areaDropdown?.refresh();
+  buildShiftChips();
+}
+
+function applySnapshot(data) {
+  DATA = data;
+  OPTIONS = flatten(data);
+  if (document.querySelector("#tent-panel").children.length === 0) {
+    initControls();
+  } else {
+    refreshDynamicControls();
+  }
+  updateFetchedAt(data.fetchedAt);
+  update();
+}
+
+function mergePortal(portal) {
+  if (!DATA) DATA = { fetchedAt: null, portals: [] };
+  const others = DATA.portals.filter((p) => p.portalId !== portal.portalId);
+  DATA = { ...DATA, fetchedAt: new Date().toISOString(), portals: [...others, portal] };
+  OPTIONS = flatten(DATA);
+  refreshDynamicControls();
+  updateFetchedAt(DATA.fetchedAt);
+  update();
+}
+
+function openStream() {
+  const es = new EventSource("/api/stream");
+  es.addEventListener("snapshot", (e) => {
+    if (!streamActive) applySnapshot(JSON.parse(e.data));
+  });
+  es.addEventListener("started", (e) => {
+    const { total } = JSON.parse(e.data);
+    streamActive = true;
+    progress = { done: 0, total };
+    updateRefreshButton();
+  });
+  es.addEventListener("portal", (e) => {
+    const { done, total, portal } = JSON.parse(e.data);
+    progress = { done, total };
+    mergePortal(portal);
+    updateRefreshButton();
+  });
+  es.addEventListener("done", (e) => {
+    const { fetchedAt } = JSON.parse(e.data);
+    streamActive = false;
+    updateFetchedAt(fetchedAt);
+    updateRefreshButton();
+    load();
+  });
+  es.addEventListener("error", () => {
+    if (es.readyState === EventSource.CLOSED) {
+      streamActive = false;
+      updateRefreshButton();
+    }
+  });
+}
+
 /* ---------------- Setup ---------------- */
 
+let tentDropdown = null;
+let areaDropdown = null;
+
 function initControls() {
-  const allTents = dedupe(OPTIONS.map((o) => o.portalId))
-    .map((id) => {
-      const o = OPTIONS.find((x) => x.portalId === id);
-      return { value: id, label: o.portalName };
-    })
-    .sort((a, b) => a.label.localeCompare(b.label));
-  makeDropdown("tent", allTents, (i) => i.label, (n) =>
-    n === 0 ? "Alle Festzelte ▾" : n === 1 ? "1 Festzelt ▾" : `${n} Festzelte ▾`,
+  tentDropdown = makeDropdown(
+    "tent",
+    () =>
+      dedupe(OPTIONS.map((o) => o.portalId))
+        .map((id) => {
+          const o = OPTIONS.find((x) => x.portalId === id);
+          return { value: id, label: o.portalName };
+        })
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    (n, count) =>
+      n === 0 ? count ? "Alle Festzelte ▾" : "Keine Festzelte ▾" : n === 1 ? "1 Festzelt ▾" : `${n} Festzelte ▾`,
   );
-
-  const allAreas = dedupe(OPTIONS.flatMap((o) => o.areas)).sort((a, b) => a.localeCompare(b));
-  makeDropdown("area", allAreas.map((a) => ({ value: a, label: a })), (i) => i.label, (n) =>
-    n === 0 ? "Alle Bereiche ▾" : n === 1 ? "1 Bereich ▾" : `${n} Bereiche ▾`,
+  areaDropdown = makeDropdown(
+    "area",
+    () => dedupe(OPTIONS.flatMap((o) => o.areas)).sort((a, b) => a.localeCompare(b)).map((a) => ({ value: a, label: a })),
+    (n, count) =>
+      n === 0 ? count ? "Alle Bereiche ▾" : "Keine Bereiche ▾" : n === 1 ? "1 Bereich ▾" : `${n} Bereiche ▾`,
   );
-
-  buildShiftChips(dedupe(OPTIONS.map((o) => o.shift)).sort((a, b) => a.localeCompare(b)));
+  buildShiftChips();
 
   document.getElementById("date-from").addEventListener("change", (e) => {
     state.dateFrom = e.target.value;
@@ -332,52 +427,37 @@ function resetFilters() {
 }
 
 async function load() {
+  if (streamActive) return; // SSE is driving the view
   const res = await fetch("/api/availability");
   const data = await res.json();
-  DATA = data;
-  OPTIONS = flatten(data);
-  if (document.querySelector("#tent-panel").children.length === 0) {
-    initControls();
-  }
-  const fetched = document.getElementById("fetched-at");
-  const fetched2 = document.getElementById("fetched-at-2");
-  if (data.fetchedAt) {
-    const d = new Date(data.fetchedAt);
-    const txt = d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
-    fetched.textContent = "Zuletzt aktualisiert: " + txt;
-    fetched2.textContent = txt;
-  }
-  update();
+  applySnapshot(data);
 }
 
-document.getElementById("refresh").addEventListener("click", async (e) => {
-  const btn = e.currentTarget;
-  btn.disabled = true;
-  btn.textContent = "Aktualisiere …";
+async function loadStatus() {
+  try {
+    const status = await (await fetch("/api/status")).json();
+    if (status.scrapeIntervalMin > 0) {
+      document.getElementById("sched-info").textContent =
+        ` · Automatische Aktualisierung alle ${status.scrapeIntervalMin} Minuten`;
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+document.getElementById("refresh").addEventListener("click", async () => {
+  if (streamActive) return;
   try {
     await fetch("/api/refresh", { method: "POST" });
-    let attempts = 0;
-    const poll = async () => {
-      const status = await (await fetch("/api/status")).json();
-      if (!status.scraping) {
-        await load();
-        btn.disabled = false;
-        btn.textContent = "Aktualisieren";
-      } else if (attempts++ < 600) {
-        setTimeout(poll, 2000);
-      } else {
-        btn.disabled = false;
-        btn.textContent = "Aktualisieren";
-      }
-    };
-    poll();
   } catch (err) {
     console.error(err);
-    btn.disabled = false;
-    btn.textContent = "Aktualisieren";
   }
 });
 
 readParams();
 load();
-setInterval(load, 60_000);
+loadStatus();
+openStream();
+setInterval(() => {
+  if (!streamActive) load();
+}, 60_000);
