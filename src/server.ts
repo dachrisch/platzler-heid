@@ -133,6 +133,10 @@ async function start(): Promise<void> {
 
   app.use(express.static(PUBLIC_DIR));
 
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok" });
+  });
+
   app.get("/api/availability", (_req, res) => {
     res.json(currentSnapshot());
   });

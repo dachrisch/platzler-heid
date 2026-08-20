@@ -1,0 +1,10 @@
+node_modules
+dist-server
+data
+.tmp
+test
+test-results
+.git
+.github
+.env
+*.log
