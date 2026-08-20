@@ -13,10 +13,6 @@
     "test": "vitest run",
     "lint": "oxlint ."
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dachrisch/festzelt-availability.git"
-  },
   "license": "ISC",
   "dependencies": {
     "express": "^5.2.1"
