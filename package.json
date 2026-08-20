@@ -1,0 +1,33 @@
+{
+  "name": "festzelt-availability",
+  "version": "0.1.0",
+  "description": "Aggregates and displays table reservation availability from Festzelt OS Oktoberfest portals (Ochsenbraterei and other tents).",
+  "type": "module",
+  "main": "src/server.ts",
+  "scripts": {
+    "scrape": "tsx src/cli.ts",
+    "dev": "tsx watch src/server.ts",
+    "serve": "tsx src/server.ts",
+    "build": "esbuild src/server.ts --bundle --platform=node --outfile=dist-server/server.js --format=esm --packages=external",
+    "start": "node dist-server/server.js",
+    "test": "vitest run",
+    "lint": "oxlint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dachrisch/festzelt-availability.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.0",
+    "oxlint": "^1.73.0",
+    "tsx": "^4.21.0",
+    "typescript": "^7.0.0",
+    "vitest": "^4.1.6"
+  }
+}

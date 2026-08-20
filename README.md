@@ -1,0 +1,127 @@
+# Festzelt Availability
+
+Aggregates and displays table reservation availability from **Festzelt OS** reservation
+portals — the booking system used by many Oktoberfest beer tents in Munich, e.g.
+[Ochsenbraterei](https://reservierung.ochsenbraterei.de/reservierungen).
+
+It queries each portal directly through the same Livewire/Filament protocol the
+portals' own websites use, so it shows the **actual available options**: which dates
+are open for booking, which time slots (e.g. *Mittag* / *Abend*), and which areas /
+party sizes are offered.
+
+## Portals covered
+
+| Portal | URL |
+| --- | --- |
+| Ochsenbraterei | https://reservierung.ochsenbraterei.de/reservierungen |
+| Paulaner Festzelt (Stiftl) | https://reservierung.paulanerfestzelt.de/reservierung |
+| Hofbräu Festzelt | https://reservierung.hb-festzelt.de/reservierung |
+| Volkssängerzelt Schützenlisl | https://reservierung.schuetzenlisl.de/ |
+| Hochreiters zur Bratwurst | https://reservierung.zur-bratwurst.de/reservierung |
+| Café Kaiserschmarrn | https://kaiserschmarrn.rischart.de/reservierung/ |
+| Poschner's Hühnerbraterei | https://reservierung.poschners.de/ |
+| Fischer Vroni | https://reservierung.fischer-vroni.de/reservation |
+| Boandlkramerei | https://reservierung.boandlkramerei.bayern/ |
+| Münchener Stubn Festzelt | https://reservierung.muenchnerstubn-festzelt.de/ |
+| Schützen-Festzelt | https://reservierung.schuetzenfestzelt.com/ |
+
+## How it works
+
+1. **Load** the portal's booking page and read the Livewire snapshot + CSRF token.
+2. **Dates** are listed in the booking form's date select — only bookable dates appear.
+3. For each date, the scraper selects it (a Livewire `updates` request to
+   `/livewire/update`) and reads the offered **booking lists** (time slots).
+4. For each booking list it selects it and reads the revealed **options**:
+   seat-plan groups/areas, pax counts and start times.
+
+All requests go through the `curl` binary: the portals sit behind Cloudflare bot
+protection that rejects Node's TLS fingerprint, while curl with a browser user agent
+passes. The scraper retries with backoff when a challenge is served.
+
+## Requirements
+
+- Node.js 20+
+- `curl` on the `PATH`
+
+## Usage
+
+```sh
+npm install
+
+# Scrape all portals into data/availability.json
+npm run scrape
+
+# Scrape a single portal
+npm run scrape -- --portal ochsenbraterei
+
+# Serve the dashboard (http://localhost:3000)
+npm run serve
+
+# Build & run the production server
+npm run build
+npm start
+```
+
+### CLI options
+
+| Flag | Description |
+| --- | --- |
+| `--portal <id>` | Scrape only one portal |
+| `--max-dates <n>` | Limit the number of dates checked per portal |
+| `--out <path>` | Output file (default `data/availability.json`) |
+| `--throttle <ms>` | Delay between requests (default 600 ms) |
+| `--concurrency <n>` | Portals scraped in parallel (default 2) |
+
+## API
+
+The server exposes:
+
+- `GET /` — dashboard UI
+- `GET /api/availability` — last snapshot (JSON)
+- `GET /api/status` — scrape status / cache age
+- `POST /api/refresh` — trigger a scrape in the background
+
+## Tests
+
+```sh
+npm test
+```
+
+## Data model
+
+```jsonc
+{
+  "fetchedAt": "2026-08-20T...",
+  "portals": [
+    {
+      "portalId": "ochsenbraterei",
+      "name": "Ochsenbraterei",
+      "url": "https://reservierung.ochsenbraterei.de/reservierungen",
+      "closed": false,
+      "dates": [
+        {
+          "date": "2026-09-21",
+          "label": "Montag, 21.09.2026",
+          "bookingLists": [
+            {
+              "id": "3060",
+              "label": "Mittag",
+              "seatplanGroups": [{ "value": "226", "label": "Innenraum" }],
+              "seatplanAreas": [],
+              "paxOptions": [],
+              "simplePax": [],
+              "startTimes": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Disclaimer
+
+This project reads publicly available reservation availability from the portal owners'
+own websites. It does not book, buy, or resell anything, and it does not bypass any
+paywall or authentication. Please respect the portals' terms of service.
