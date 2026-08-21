@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/dachrisch/platzler-heid/compare/v1.0.0...v1.1.0) (2026-08-21)
+
+
+### Features
+
+* make filters collapsible on mobile ([e567d5b](https://github.com/dachrisch/platzler-heid/commit/e567d5bd112aff6f5be3b5cd7c515cde3873e1a4))
+
 ## 1.0.0 (2026-08-21)
 
 
