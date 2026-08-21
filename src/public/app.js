@@ -218,6 +218,7 @@ function renderSummary(filtered) {
   document.getElementById("result-head").textContent =
     `${filtered.length} verfügbare Reservierung(en) in ${tents.size} Festzelt(en)`;
   document.getElementById("result-shifts").textContent = shiftText;
+  updateFilterToggle();
 }
 
 function groupByDate(options) {
@@ -427,6 +428,24 @@ function resetFilters() {
   update();
 }
 
+function activeFilterCount() {
+  return (
+    (state.tents.size ? 1 : 0) +
+    (state.shifts.size ? 1 : 0) +
+    (state.areas.size ? 1 : 0) +
+    (state.dateFrom || state.dateTo ? 1 : 0) +
+    (state.weekendOnly ? 1 : 0) +
+    (state.search ? 1 : 0)
+  );
+}
+
+function updateFilterToggle() {
+  const count = activeFilterCount();
+  const badge = document.getElementById("filter-count");
+  badge.textContent = count;
+  badge.hidden = count === 0;
+}
+
 async function load() {
   if (streamActive) return; // SSE is driving the view
   const res = await fetch("/api/availability");
@@ -459,6 +478,22 @@ readParams();
 load();
 loadStatus();
 openStream();
+
+const filterToggle = document.getElementById("filter-toggle");
+const filters = document.getElementById("filters");
+
+filterToggle.addEventListener("click", () => {
+  const open = filters.classList.toggle("open");
+  filterToggle.classList.toggle("open", open);
+  filterToggle.setAttribute("aria-expanded", String(open));
+});
+
+if (activeFilterCount() > 0) {
+  filters.classList.add("open");
+  filterToggle.classList.add("open");
+  filterToggle.setAttribute("aria-expanded", "true");
+}
+
 setInterval(() => {
   if (!streamActive) load();
 }, 60_000);
