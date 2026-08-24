@@ -35,6 +35,10 @@ COPY package.json ./
 COPY --from=build /app/dist-server ./dist-server
 COPY src/public ./src/public
 
+# The runtime user `node` needs to persist the availability cache and the
+# subscriber store under /app/data.
+RUN mkdir -p /app/data && chown node:node /app/data
+
 EXPOSE 3000
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=5 \
