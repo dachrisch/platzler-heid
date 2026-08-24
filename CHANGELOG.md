@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/dachrisch/platzler-heid/compare/v1.1.1...v1.2.0) (2026-08-24)
+
+
+### Features
+
+* add remaining Wiesn tent reservation portals ([b103a81](https://github.com/dachrisch/platzler-heid/commit/b103a814df29a5204be2f4477bedd7645d3684bf))
+
 ## [1.1.1](https://github.com/dachrisch/platzler-heid/compare/v1.1.0...v1.1.1) (2026-08-24)
 
 
