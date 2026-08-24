@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/dachrisch/platzler-heid/compare/v1.5.0...v1.5.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* add PNG favicon and apple-touch-icon for iOS and legacy browser support ([8b695f8](https://github.com/dachrisch/platzler-heid/commit/8b695f80949774de90a38c68cd41e9b021ffffbc))
+
 ## [1.5.0](https://github.com/dachrisch/platzler-heid/compare/v1.4.1...v1.5.0) (2026-08-24)
 
 
