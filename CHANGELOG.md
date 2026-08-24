@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/dachrisch/platzler-heid/compare/v1.1.0...v1.1.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* filter panel not opening on mobile (missing id) ([df516cb](https://github.com/dachrisch/platzler-heid/commit/df516cb8ad311d3f3a24026600655188e44a665e))
+
 ## [1.1.0](https://github.com/dachrisch/platzler-heid/compare/v1.0.0...v1.1.0) (2026-08-21)
 
 
