@@ -105,53 +105,33 @@ header h1 {
   color: #fff;
 }
 
-.subscribe-badge {
-  background: var(--accent);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 3px 7px;
-  border-radius: 999px;
-}
+/* ---------------- Email subscribe panel ---------------- */
 
-.subscribe.active .subscribe-badge {
-  background: #fff;
-  color: var(--accent);
-}
-
-/* ---------------- Change notifications ---------------- */
-
-.notify {
+.subscribe-panel {
   position: fixed;
   bottom: 16px;
   right: 16px;
-  width: min(380px, calc(100vw - 32px));
-  max-height: 60vh;
-  overflow-y: auto;
+  width: min(360px, calc(100vw - 32px));
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(28, 25, 23, 0.16);
   z-index: 40;
+  padding: 14px 16px 16px;
 }
 
-.notify-head {
+.subscribe-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  background: var(--card);
+  margin-bottom: 8px;
 }
 
-.notify-head strong {
+.subscribe-panel-head strong {
   font-size: 14px;
 }
 
-#notify-close {
+#subscribe-close {
   border: none;
   background: none;
   font-size: 18px;
@@ -161,49 +141,66 @@ header h1 {
   padding: 2px 4px;
 }
 
-#notify-close:hover {
+#subscribe-close:hover {
   color: var(--ink);
 }
 
-.notify-body {
-  padding: 10px 14px 12px;
+.subscribe-hint {
+  margin: 0 0 12px;
   font-size: 13px;
-}
-
-.notify-sub {
-  margin: 8px 0 4px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   color: var(--muted);
+  line-height: 1.5;
 }
 
-.notify-item {
-  padding: 3px 0;
+#subscribe-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#subscribe-form label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+#subscribe-form input[type="email"] {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+#subscribe-form button[type="submit"] {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#subscribe-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.subscribe-msg {
+  margin-top: 10px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
-.notify-added::before {
-  content: "●";
-  display: inline-block;
+.subscribe-msg.ok {
   color: var(--ok);
-  margin-right: 6px;
-  font-size: 10px;
 }
 
-.notify-removed {
-  color: var(--muted);
-  text-decoration: line-through;
-}
-
-.notify-removed::before {
-  content: "●";
-  display: inline-block;
+.subscribe-msg.err {
   color: var(--warn);
-  margin-right: 6px;
-  font-size: 10px;
-  text-decoration: none;
 }
 
 /* ---------------- Filters ---------------- */

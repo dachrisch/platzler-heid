@@ -6,19 +6,12 @@ const state = {
   dateTo: "",
   weekendOnly: false,
   search: "",
-  subscribe: false,
 };
 
 let DATA = null;
 let OPTIONS = [];
 let streamActive = false;
 let progress = { done: 0, total: 0 };
-
-// Watch baseline: latest snapshot of the *filtered* entries while subscribed.
-let baseline = null; // Map<optionKey, option>
-let baselineFilter = null; // filterStateKey() at baseline capture time
-let pendingChanges = { added: [], removed: [] };
-let pendingSeen = true;
 
 const SHIFT_COLORS = {
   Abend: "shift-abend",
@@ -86,7 +79,6 @@ function readParams() {
   state.dateTo = p.get("to") ?? "";
   state.weekendOnly = p.get("w") === "1";
   state.search = p.get("q") ?? "";
-  state.subscribe = p.get("sub") === "1";
 }
 
 function syncParams() {
@@ -98,7 +90,6 @@ function syncParams() {
   if (state.dateTo) p.set("to", state.dateTo);
   if (state.weekendOnly) p.set("w", "1");
   if (state.search) p.set("q", state.search);
-  if (state.subscribe) p.set("sub", "1");
   history.replaceState(null, "", p.toString() ? "?" + p.toString() : location.pathname);
 }
 
@@ -118,122 +109,73 @@ function matches(o) {
   return true;
 }
 
-/* ---------------- Subscribe to changes ---------------- */
+/* ---------------- Email notifications ---------------- */
 
-function optionKey(o) {
-  return [
-    o.portalId,
-    o.date,
-    o.shift,
-    [...o.areas].sort().join(","),
-    [...o.pax].sort().join(","),
-    [...o.startTimes].sort().join(","),
-  ].join("|");
-}
-
-function filterStateKey() {
-  return JSON.stringify({
-    tents: [...state.tents].sort(),
-    shifts: [...state.shifts].sort(),
-    areas: [...state.areas].sort(),
+function currentFilter() {
+  return {
+    tents: [...state.tents],
+    shifts: [...state.shifts],
+    areas: [...state.areas],
     from: state.dateFrom,
     to: state.dateTo,
     weekend: state.weekendOnly,
     search: state.search,
-  });
+  };
 }
 
-function currentFilteredMap() {
-  const m = new Map();
-  for (const o of OPTIONS) {
-    if (matches(o)) m.set(optionKey(o), o);
-  }
-  return m;
+const subscribeBtn = document.getElementById("subscribe");
+const subscribePanel = document.getElementById("subscribe-panel");
+const subscribeForm = document.getElementById("subscribe-form");
+const subscribeEmail = document.getElementById("subscribe-email");
+const subscribeMsg = document.getElementById("subscribe-msg");
+const subscribeLabel = document.getElementById("subscribe-label");
+
+function showSubscribeMsg(text, ok) {
+  subscribeMsg.textContent = text;
+  subscribeMsg.classList.toggle("ok", ok);
+  subscribeMsg.classList.toggle("err", !ok);
+  subscribeMsg.hidden = false;
 }
 
-function describeOption(o) {
-  const parts = [o.portalName, o.dateLabel, o.shift];
-  if (o.areas.length) parts.push(o.areas.join(", "));
-  return parts.join(" · ");
+function openSubscribePanel() {
+  subscribeMsg.hidden = true;
+  subscribePanel.hidden = false;
+  subscribeEmail.focus();
 }
 
-function updateSubscribeBadge(n) {
-  const badge = document.getElementById("subscribe-badge");
-  badge.textContent = n;
-  badge.hidden = !n;
-}
+subscribeBtn.addEventListener("click", () => {
+  subscribePanel.hidden = !subscribePanel.hidden;
+  if (!subscribePanel.hidden) openSubscribePanel();
+});
+document.getElementById("subscribe-close").addEventListener("click", () => {
+  subscribePanel.hidden = true;
+});
 
-function renderNotify() {
-  const body = document.getElementById("notify-body");
-  const sections = [];
-  if (pendingChanges.added.length) {
-    sections.push(
-      `<h3 class="notify-sub">Neu verfügbar (${pendingChanges.added.length})</h3>` +
-        pendingChanges.added
-          .map((o) => `<div class="notify-item notify-added">${escapeHtml(describeOption(o))}</div>`)
-          .join(""),
-    );
-  }
-  if (pendingChanges.removed.length) {
-    sections.push(
-      `<h3 class="notify-sub">Nicht mehr verfügbar (${pendingChanges.removed.length})</h3>` +
-        pendingChanges.removed
-          .map((o) => `<div class="notify-item notify-removed">${escapeHtml(describeOption(o))}</div>`)
-          .join(""),
-    );
-  }
-  body.innerHTML = sections.join("");
-  document.getElementById("notify").hidden = false;
-  updateSubscribeBadge(pendingChanges.added.length + pendingChanges.removed.length);
-}
-
-function dismissNotify() {
-  pendingSeen = true;
-  pendingChanges = { added: [], removed: [] };
-  document.getElementById("notify").hidden = true;
-  updateSubscribeBadge(0);
-}
-
-function checkChanges() {
-  if (!state.subscribe) return;
-  const cur = currentFilteredMap();
-  if (baseline === null) {
-    baseline = cur;
-    baselineFilter = filterStateKey();
+subscribeForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!subscribeEmail.checkValidity()) {
+    subscribeEmail.reportValidity();
     return;
   }
-  const added = [];
-  for (const [k, o] of cur) if (!baseline.has(k)) added.push(o);
-  const removed = [];
-  for (const [k, o] of baseline) if (!cur.has(k)) removed.push(o);
-  baseline = cur;
-  baselineFilter = filterStateKey();
-  if (!added.length && !removed.length) return;
-  if (pendingSeen) {
-    pendingChanges = { added: [], removed: [] };
-    pendingSeen = false;
+  subscribeForm.querySelector("button[type=submit]").disabled = true;
+  try {
+    const res = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: subscribeEmail.value, filter: currentFilter() }),
+    });
+    if (!res.ok) throw new Error("request failed");
+    showSubscribeMsg("Abonniert — du erhältst ab jetzt eine E-Mail bei Änderungen.", true);
+    subscribeLabel.textContent = "Abonniert ✓";
+    subscribeBtn.classList.add("active");
+    localStorage.setItem("subscribed", "1");
+  } catch (err) {
+    console.error(err);
+    showSubscribeMsg("Abonnieren fehlgeschlagen — bitte erneut versuchen.", false);
+  } finally {
+    subscribeForm.querySelector("button[type=submit]").disabled = false;
   }
-  pendingChanges.added.push(...added);
-  pendingChanges.removed.push(...removed);
-  renderNotify();
-}
-
-function setSubscribe(on) {
-  state.subscribe = on;
-  document.getElementById("subscribe").classList.toggle("active", on);
-  document.getElementById("subscribe-label").textContent = on ? "Abonniert ✓" : "Abonnieren";
-  if (on && DATA) {
-    // Anchor the baseline to the current filtered set; the first snapshot
-    // while subscribed establishes it silently if data isn't loaded yet.
-    baseline = currentFilteredMap();
-    baselineFilter = filterStateKey();
-  } else {
-    baseline = null;
-    baselineFilter = null;
-  }
-  dismissNotify();
-  syncParams();
-}
+});
 
 /* ---------------- Multi-select dropdown ---------------- */
 
@@ -395,12 +337,6 @@ function renderResults() {
 
 function update() {
   syncParams();
-  // A filter change re-defines the watched set — re-anchor silently instead of
-  // reporting it as an availability change.
-  if (state.subscribe && baseline !== null && baselineFilter !== filterStateKey()) {
-    baseline = currentFilteredMap();
-    baselineFilter = filterStateKey();
-  }
   document.querySelectorAll(".chip").forEach((c) => {
     const shift = c.textContent;
     c.classList.toggle("active", state.shifts.has(shift));
@@ -454,7 +390,6 @@ function applySnapshot(data) {
   }
   updateFetchedAt(data.fetchedAt);
   update();
-  checkChanges();
 }
 
 function mergePortal(portal) {
@@ -607,14 +542,13 @@ document.getElementById("refresh").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("subscribe").addEventListener("click", () => setSubscribe(!state.subscribe));
-document.getElementById("notify-close").addEventListener("click", dismissNotify);
-
 readParams();
 
-// Reflect a subscription persisted in the URL (?sub=1).
-document.getElementById("subscribe").classList.toggle("active", state.subscribe);
-document.getElementById("subscribe-label").textContent = state.subscribe ? "Abonniert ✓" : "Abonnieren";
+// Reflect a persisted subscription (localStorage) in the button state.
+if (localStorage.getItem("subscribed") === "1") {
+  subscribeBtn.classList.add("active");
+  subscribeLabel.textContent = "Abonniert ✓";
+}
 
 load();
 loadStatus();

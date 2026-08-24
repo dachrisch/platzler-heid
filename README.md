@@ -99,11 +99,11 @@ Clicking **Aktualisieren** triggers a live scrape whose results are **streamed**
 browser via [Server-Sent Events](#api): each tent appears in the list as soon as it has
 been scraped (`3/10 Festzelte …`), instead of waiting for the whole run.
 
-Clicking **Abonnieren** watches the currently filtered results: on every data update
-(streamed refresh, scheduled scrape or the periodic poll) the view is compared against
-the last snapshot and a dismissible panel lists **newly available** and **no longer
-available** reservations that match the active filters. The subscription survives a
-page reload via the `sub=1` URL parameter.
+Clicking **Benachrichtigen** lets you subscribe with your email address: your
+current filters are stored server-side and, whenever a scrape detects that a
+matching reservation became **newly available** or is **no longer available**,
+you receive an email with the changes and an unsubscribe link. Notifications are
+sent through SMTP; without SMTP configured the sender logs the email to stdout.
 
 ### Scheduled scraping
 
@@ -126,6 +126,12 @@ the cache file fresh too.
 | `THROTTLE_MS` | `600` | Delay between requests to a portal |
 | `CONCURRENCY` | `2` | Portals scraped in parallel |
 | `SCRAPE_INTERVAL_MIN` | `0` | Re-scrape interval in minutes (`0` disables) |
+| `PUBLIC_BASE_URL` | `http://localhost:3000` | Base URL used for links in notification emails |
+| `SMTP_HOST` | — | SMTP server hostname; unset → emails are logged to stdout |
+| `SMTP_PORT` | `587` | SMTP port |
+| `SMTP_USER` | — | SMTP username |
+| `SMTP_PASS` | — | SMTP password |
+| `SMTP_FROM` | `festzelt@lehel.xyz` | Sender address for notification emails |
 
 ### CLI options
 
@@ -146,6 +152,8 @@ The server exposes:
 - `GET /api/status` — scrape status / cache age / progress / schedule interval
 - `GET /api/stream` — Server-Sent Events stream (`snapshot`, `started`, `portal`, `done`)
 - `POST /api/refresh` — trigger a scrape; results are broadcast to all SSE clients
+- `POST /api/subscribe` — subscribe an email address to filter changes (`{ "email": "...", "filter": {...} }`)
+- `GET /api/unsubscribe?token=…` — remove a subscription via the link in the notification email
 
 SSE event flow during a refresh:
 

@@ -16,9 +16,8 @@
         <div class="toolbar">
           <span id="fetched-at" class="muted"></span>
           <span id="progress" class="muted"></span>
-          <button id="subscribe" class="subscribe" type="button" title="Bei Änderungen der gefilterten Reservierungen informieren">
-            <span id="subscribe-label">Abonnieren</span>
-            <span id="subscribe-badge" class="subscribe-badge" hidden></span>
+          <button id="subscribe" class="subscribe" type="button" title="E-Mail bei Änderungen der gefilterten Reservierungen">
+            <span id="subscribe-label">Benachrichtigen</span>
           </button>
           <button id="refresh">Aktualisieren</button>
         </div>
@@ -92,12 +91,18 @@
       Daten werden direkt von den öffentlichen Reservierungsportalen der Festzelte abgerufen (Stand: <span id="fetched-at-2"></span>)<span id="sched-info"></span>.
     </footer>
 
-    <div id="notify" class="notify" hidden>
-      <div class="notify-head">
-        <strong>Änderungen</strong>
-        <button type="button" id="notify-close" aria-label="Schließen">×</button>
+    <div id="subscribe-panel" class="subscribe-panel" hidden>
+      <div class="subscribe-panel-head">
+        <strong>E-Mail-Benachrichtigung</strong>
+        <button type="button" id="subscribe-close" aria-label="Schließen">×</button>
       </div>
-      <div id="notify-body" class="notify-body"></div>
+      <p class="subscribe-hint">Du erhältst eine E-Mail, sobald sich eine der aktuell gefilterten Reservierungen ändert.</p>
+      <form id="subscribe-form">
+        <label for="subscribe-email">E-Mail-Adresse</label>
+        <input type="email" id="subscribe-email" required placeholder="du@beispiel.de" autocomplete="email" />
+        <button type="submit">Abonnieren</button>
+      </form>
+      <div id="subscribe-msg" class="subscribe-msg" hidden></div>
     </div>
 
     <script src="/app.js"></script>

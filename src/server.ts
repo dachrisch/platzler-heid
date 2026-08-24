@@ -6,18 +6,32 @@ import express from "express";
 import { PORTALS } from "./config.js";
 import { scrapeAll } from "./scraper.js";
 import type { AvailabilitySnapshot, PortalAvailability } from "./types.js";
+import { createEmailSender, type EmailSender } from "./email.js";
+import {
+  SubscriberStore,
+  buildNotificationEmail,
+  diffOptions,
+  flatten,
+  type SubscriptionFilter,
+} from "./subscriptions.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // Resolves to <project>/src/public both when run from source (tsx) and from
 // the bundled build in dist-server/.
 const PUBLIC_DIR = resolve(__dirname, "..", "src", "public");
 const CACHE_FILE = resolve(process.cwd(), "data", "availability.json");
+const SUBSCRIBERS_FILE = resolve(process.cwd(), "data", "subscribers.json");
 
 const PORT = Number(process.env.PORT ?? 3000);
 const THROTTLE_MS = Number(process.env.THROTTLE_MS ?? 600);
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 2);
 // 0 disables the scheduler (scrape manually via the UI or POST /api/refresh).
 const SCRAPE_INTERVAL_MIN = Number(process.env.SCRAPE_INTERVAL_MIN ?? 0);
+// Base URL for links in notification emails (dashboard + unsubscribe).
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL ?? "http://localhost:3000";
+
+const emailSender: EmailSender = createEmailSender();
+const subscribers = new SubscriberStore(SUBSCRIBERS_FILE);
 
 interface ScrapeProgress {
   done: number;
@@ -90,6 +104,7 @@ async function runScrape(): Promise<AvailabilitySnapshot> {
   scraping = true;
   lastError = null;
   scrapeProgress = { done: 0, total: PORTALS.length, currentPortal: null };
+  const previous = cache;
   liveSnapshot = { ...(cache ?? { fetchedAt: "", portals: [] }) };
   broadcast("started", { at: new Date().toISOString(), total: PORTALS.length });
 
@@ -117,6 +132,7 @@ async function runScrape(): Promise<AvailabilitySnapshot> {
     liveSnapshot = snapshot;
     scrapeProgress = { done: PORTALS.length, total: PORTALS.length, currentPortal: null };
     broadcast("done", { fetchedAt: snapshot.fetchedAt });
+    if (previous) notifySubscribers(previous, snapshot);
     return snapshot;
   } catch (err) {
     lastError = err instanceof Error ? err.message : String(err);
@@ -128,9 +144,51 @@ async function runScrape(): Promise<AvailabilitySnapshot> {
   }
 }
 
+/* ---------------- Email notifications ---------------- */
+
+function strArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.map((x) => String(x)).filter(Boolean) : [];
+}
+
+function normalizeFilter(raw: unknown): SubscriptionFilter {
+  const f = (raw ?? {}) as Record<string, unknown>;
+  return {
+    tents: strArray(f.tents),
+    shifts: strArray(f.shifts),
+    areas: strArray(f.areas),
+    from: typeof f.from === "string" ? f.from : "",
+    to: typeof f.to === "string" ? f.to : "",
+    weekend: f.weekend === true,
+    search: typeof f.search === "string" ? f.search : "",
+  };
+}
+
+function notifySubscribers(prev: AvailabilitySnapshot, cur: AvailabilitySnapshot): void {
+  const prevOptions = flatten(prev);
+  const curOptions = flatten(cur);
+  for (const sub of subscribers.list()) {
+    try {
+      const diff = diffOptions(prevOptions, curOptions, sub.filter);
+      if (!diff.added.length && !diff.removed.length) continue;
+      const { subject, text, html } = buildNotificationEmail({
+        filter: sub.filter,
+        diff,
+        baseUrl: PUBLIC_BASE_URL,
+        token: sub.token,
+      });
+      emailSender.send(sub.email, subject, text, html).catch((err) => {
+        console.error(`Failed to send notification to ${sub.email}:`, err);
+      });
+    } catch (err) {
+      console.error(`Failed to build notification for ${sub.email}:`, err);
+    }
+  }
+}
+
 async function start(): Promise<void> {
   const app = express();
 
+  app.use(express.json());
   app.use(express.static(PUBLIC_DIR));
 
   app.get("/health", (_req, res) => {
@@ -152,6 +210,27 @@ async function start(): Promise<void> {
   });
 
   app.get("/api/stream", handleStream);
+
+  app.post("/api/subscribe", (req, res) => {
+    const email = String(req.body?.email ?? "").trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      res.status(400).json({ error: "invalid email" });
+      return;
+    }
+    const sub = subscribers.add(email, normalizeFilter(req.body?.filter));
+    res.json({ id: sub.id });
+  });
+
+  app.get("/api/unsubscribe", (req, res) => {
+    const token = String(req.query.token ?? "");
+    const removed = subscribers.removeByToken(token);
+    res.type("html").send(`<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Abgemeldet</title></head>
+<body style="font-family:system-ui,sans-serif;padding:40px;text-align:center;color:#1c1917">
+<h1>${removed ? "Du wurdest abgemeldet." : "Ungültiger Abmeldelink."}</h1>
+<p style="color:#78716c">${removed ? "Du erhältst ab jetzt keine E-Mail-Benachrichtigungen mehr." : ""}</p>
+</body></html>`);
+  });
 
   app.post("/api/refresh", async (_req, res) => {
     if (scraping) {
