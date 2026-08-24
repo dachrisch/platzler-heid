@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/dachrisch/platzler-heid/compare/v1.2.0...v1.3.0) (2026-08-24)
+
+
+### Features
+
+* subscribe to changes on filtered reservations ([4e3eb22](https://github.com/dachrisch/platzler-heid/commit/4e3eb22569a4f8d77076f7233e310b4547c28456))
+
 ## [1.2.0](https://github.com/dachrisch/platzler-heid/compare/v1.1.1...v1.2.0) (2026-08-24)
 
 
