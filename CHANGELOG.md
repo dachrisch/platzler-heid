@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/dachrisch/platzler-heid/compare/v1.4.0...v1.4.1) (2026-08-24)
+
+
+### Bug Fixes
+
+* make /app/data writable for the node runtime user ([17574ea](https://github.com/dachrisch/platzler-heid/commit/17574ea4fd820c6b852e9d8c00bd75c3adca81cc))
+
 ## [1.4.0](https://github.com/dachrisch/platzler-heid/compare/v1.3.0...v1.4.0) (2026-08-24)
 
 
