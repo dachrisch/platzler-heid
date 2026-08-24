@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/dachrisch/platzler-heid/compare/v1.4.1...v1.5.0) (2026-08-24)
+
+
+### Features
+
+* add Marstall Festzelt and Käfer Wiesn-Schänke portals ([04f1059](https://github.com/dachrisch/platzler-heid/commit/04f10593b6af0cdbdec1fa76380522c726b0f7f7))
+
 ## [1.4.1](https://github.com/dachrisch/platzler-heid/compare/v1.4.0...v1.4.1) (2026-08-24)
 
 
