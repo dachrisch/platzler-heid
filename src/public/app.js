@@ -6,12 +6,19 @@ const state = {
   dateTo: "",
   weekendOnly: false,
   search: "",
+  subscribe: false,
 };
 
 let DATA = null;
 let OPTIONS = [];
 let streamActive = false;
 let progress = { done: 0, total: 0 };
+
+// Watch baseline: latest snapshot of the *filtered* entries while subscribed.
+let baseline = null; // Map<optionKey, option>
+let baselineFilter = null; // filterStateKey() at baseline capture time
+let pendingChanges = { added: [], removed: [] };
+let pendingSeen = true;
 
 const SHIFT_COLORS = {
   Abend: "shift-abend",
@@ -79,6 +86,7 @@ function readParams() {
   state.dateTo = p.get("to") ?? "";
   state.weekendOnly = p.get("w") === "1";
   state.search = p.get("q") ?? "";
+  state.subscribe = p.get("sub") === "1";
 }
 
 function syncParams() {
@@ -90,6 +98,7 @@ function syncParams() {
   if (state.dateTo) p.set("to", state.dateTo);
   if (state.weekendOnly) p.set("w", "1");
   if (state.search) p.set("q", state.search);
+  if (state.subscribe) p.set("sub", "1");
   history.replaceState(null, "", p.toString() ? "?" + p.toString() : location.pathname);
 }
 
@@ -107,6 +116,123 @@ function matches(o) {
     if (!hay.includes(state.search.toLowerCase())) return false;
   }
   return true;
+}
+
+/* ---------------- Subscribe to changes ---------------- */
+
+function optionKey(o) {
+  return [
+    o.portalId,
+    o.date,
+    o.shift,
+    [...o.areas].sort().join(","),
+    [...o.pax].sort().join(","),
+    [...o.startTimes].sort().join(","),
+  ].join("|");
+}
+
+function filterStateKey() {
+  return JSON.stringify({
+    tents: [...state.tents].sort(),
+    shifts: [...state.shifts].sort(),
+    areas: [...state.areas].sort(),
+    from: state.dateFrom,
+    to: state.dateTo,
+    weekend: state.weekendOnly,
+    search: state.search,
+  });
+}
+
+function currentFilteredMap() {
+  const m = new Map();
+  for (const o of OPTIONS) {
+    if (matches(o)) m.set(optionKey(o), o);
+  }
+  return m;
+}
+
+function describeOption(o) {
+  const parts = [o.portalName, o.dateLabel, o.shift];
+  if (o.areas.length) parts.push(o.areas.join(", "));
+  return parts.join(" · ");
+}
+
+function updateSubscribeBadge(n) {
+  const badge = document.getElementById("subscribe-badge");
+  badge.textContent = n;
+  badge.hidden = !n;
+}
+
+function renderNotify() {
+  const body = document.getElementById("notify-body");
+  const sections = [];
+  if (pendingChanges.added.length) {
+    sections.push(
+      `<h3 class="notify-sub">Neu verfügbar (${pendingChanges.added.length})</h3>` +
+        pendingChanges.added
+          .map((o) => `<div class="notify-item notify-added">${escapeHtml(describeOption(o))}</div>`)
+          .join(""),
+    );
+  }
+  if (pendingChanges.removed.length) {
+    sections.push(
+      `<h3 class="notify-sub">Nicht mehr verfügbar (${pendingChanges.removed.length})</h3>` +
+        pendingChanges.removed
+          .map((o) => `<div class="notify-item notify-removed">${escapeHtml(describeOption(o))}</div>`)
+          .join(""),
+    );
+  }
+  body.innerHTML = sections.join("");
+  document.getElementById("notify").hidden = false;
+  updateSubscribeBadge(pendingChanges.added.length + pendingChanges.removed.length);
+}
+
+function dismissNotify() {
+  pendingSeen = true;
+  pendingChanges = { added: [], removed: [] };
+  document.getElementById("notify").hidden = true;
+  updateSubscribeBadge(0);
+}
+
+function checkChanges() {
+  if (!state.subscribe) return;
+  const cur = currentFilteredMap();
+  if (baseline === null) {
+    baseline = cur;
+    baselineFilter = filterStateKey();
+    return;
+  }
+  const added = [];
+  for (const [k, o] of cur) if (!baseline.has(k)) added.push(o);
+  const removed = [];
+  for (const [k, o] of baseline) if (!cur.has(k)) removed.push(o);
+  baseline = cur;
+  baselineFilter = filterStateKey();
+  if (!added.length && !removed.length) return;
+  if (pendingSeen) {
+    pendingChanges = { added: [], removed: [] };
+    pendingSeen = false;
+  }
+  pendingChanges.added.push(...added);
+  pendingChanges.removed.push(...removed);
+  renderNotify();
+}
+
+function setSubscribe(on) {
+  state.subscribe = on;
+  document.getElementById("subscribe").classList.toggle("active", on);
+  document.getElementById("subscribe-label").textContent = on ? "Abonniert ✓" : "Abonnieren";
+  if (on && DATA) {
+    // Anchor the baseline to the current filtered set; the first snapshot
+    // while subscribed establishes it silently if data isn't loaded yet.
+    baseline = currentFilteredMap();
+    baselineFilter = filterStateKey();
+  } else {
+    baseline = null;
+    baselineFilter = null;
+  }
+  dismissNotify();
+  syncParams();
 }
 
 /* ---------------- Multi-select dropdown ---------------- */
@@ -269,6 +395,12 @@ function renderResults() {
 
 function update() {
   syncParams();
+  // A filter change re-defines the watched set — re-anchor silently instead of
+  // reporting it as an availability change.
+  if (state.subscribe && baseline !== null && baselineFilter !== filterStateKey()) {
+    baseline = currentFilteredMap();
+    baselineFilter = filterStateKey();
+  }
   document.querySelectorAll(".chip").forEach((c) => {
     const shift = c.textContent;
     c.classList.toggle("active", state.shifts.has(shift));
@@ -322,6 +454,7 @@ function applySnapshot(data) {
   }
   updateFetchedAt(data.fetchedAt);
   update();
+  checkChanges();
 }
 
 function mergePortal(portal) {
@@ -474,7 +607,15 @@ document.getElementById("refresh").addEventListener("click", async () => {
   }
 });
 
+document.getElementById("subscribe").addEventListener("click", () => setSubscribe(!state.subscribe));
+document.getElementById("notify-close").addEventListener("click", dismissNotify);
+
 readParams();
+
+// Reflect a subscription persisted in the URL (?sub=1).
+document.getElementById("subscribe").classList.toggle("active", state.subscribe);
+document.getElementById("subscribe-label").textContent = state.subscribe ? "Abonniert ✓" : "Abonnieren";
+
 load();
 loadStatus();
 openStream();

@@ -99,6 +99,12 @@ Clicking **Aktualisieren** triggers a live scrape whose results are **streamed**
 browser via [Server-Sent Events](#api): each tent appears in the list as soon as it has
 been scraped (`3/10 Festzelte …`), instead of waiting for the whole run.
 
+Clicking **Abonnieren** watches the currently filtered results: on every data update
+(streamed refresh, scheduled scrape or the periodic poll) the view is compared against
+the last snapshot and a dismissible panel lists **newly available** and **no longer
+available** reservations that match the active filters. The subscription survives a
+page reload via the `sub=1` URL parameter.
+
 ### Scheduled scraping
 
 The server can re-scrape on an interval and stream the fresh results to all open
