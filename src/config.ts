@@ -56,6 +56,58 @@ export const PORTALS: PortalConfig[] = [
     name: "Münchener Stubn Festzelt",
     url: "https://reservierung.muenchnerstubn-festzelt.de/reservation",
   },
+  {
+    id: "armbrustschuetzen",
+    name: "Armbrustschützen-Festzelt",
+    url: "https://reservierung.armbrustschuetzenzelt.de/reservierung",
+  },
+  {
+    id: "braeurosl",
+    name: "Bräurosl Festzelt",
+    url: "https://reservierung.braeurosl.de/reservation",
+  },
+  {
+    id: "loewenbraeu",
+    name: "Löwenbräu-Festzelt",
+    url: "https://reservierung.loewenbraeuzelt.de/reservierung",
+  },
+  {
+    id: "hacker-festzelt",
+    name: "Hacker Festzelt",
+    url: "https://reservierung.derhimmelderbayern.de/reservierung",
+  },
+  {
+    id: "augustiner",
+    name: "Augustiner Festhalle",
+    url: "https://reservierung.festhalle-augustiner.com/reservierung",
+  },
+  {
+    id: "schuetzen",
+    name: "Schützen-Festzelt",
+    url: "https://reservierung.schuetzenfestzelt.com/reservation",
+    api: {
+      baseUrl: "https://schuetzen-api.festzelt-os.com/lp",
+      companyUid: "M5RN1H1",
+    },
+  },
+  {
+    id: "schottenhamel",
+    name: "Festhalle Schottenhamel",
+    url: "https://reservierung.festhalle-schottenhamel.de/reservation",
+    api: {
+      baseUrl: "https://schottenhamel-api.festzelt-os.com/lp",
+      companyUid: "KDLWJDR",
+    },
+  },
+  {
+    id: "weinzelt",
+    name: "Kufflers Weinzelt",
+    url: "https://reservierung.weinzelt.com/reservation",
+    api: {
+      baseUrl: "https://api.festzelt-os.com/lp",
+      companyUid: "FOSKUFW4711",
+    },
+  },
 ];
 
 export function getPortal(id: string): PortalConfig | undefined {

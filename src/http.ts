@@ -88,10 +88,6 @@ export async function curlRequest(
     "--compressed",
     "--max-time",
     String(Math.floor((options.maxTimeMs ?? 30000) / 1000)),
-    "-b",
-    options.cookieJar,
-    "-c",
-    options.cookieJar,
     "-A",
     options.userAgent ?? DEFAULT_USER_AGENT,
     "-D",
@@ -99,6 +95,10 @@ export async function curlRequest(
     "-o",
     bodyFile,
   ];
+
+  if (options.cookieJar) {
+    args.push("-b", options.cookieJar, "-c", options.cookieJar);
+  }
 
   if (options.body !== undefined) {
     args.push("-X", "POST", "-H", "Content-Type: application/json", "--data-binary", options.body);

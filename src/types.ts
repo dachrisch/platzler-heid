@@ -40,10 +40,22 @@ export interface AvailabilitySnapshot {
   portals: PortalAvailability[];
 }
 
+export interface FestzeltOs2ApiConfig {
+  /** Base URL of the Festzelt OS 2.0 landing-page JSON API (e.g. https://<tent>-api.festzelt-os.com/lp). */
+  baseUrl: string;
+  /** Company UID sent as the `x-festzelt-os-Company` header. */
+  companyUid: string;
+}
+
 export interface PortalConfig {
   id: string;
   name: string;
   url: string;
   /** Maximum number of dates to check per run (undefined = all). */
   maxDates?: number;
+  /**
+   * When set, the portal is scraped through the Festzelt OS 2.0 JSON API
+   * instead of the Livewire/Filament booking form.
+   */
+  api?: FestzeltOs2ApiConfig;
 }

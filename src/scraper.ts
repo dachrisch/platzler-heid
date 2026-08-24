@@ -10,6 +10,7 @@ import type {
   SelectOption,
 } from "./types.js";
 import { LivewireClient, parseSelectOptions } from "./livewire.js";
+import { scrapeFestzeltOs2 } from "./festzelt-os2.js";
 
 export interface ScrapeOptions {
   throttleMs?: number;
@@ -37,6 +38,16 @@ export async function scrapePortal(
   cfg: PortalConfig,
   opts: ScrapeOptions = {},
 ): Promise<PortalAvailability> {
+  if (cfg.api) {
+    return scrapeFestzeltOs2(cfg, {
+      throttleMs: opts.throttleMs,
+      maxRetries: opts.maxRetries,
+      maxDates: opts.maxDates,
+      concurrency: opts.concurrency,
+      onProgress: opts.onProgress,
+    });
+  }
+
   const jarDir = mkdtempSync(join(tmpdir(), "fza-jar-"));
   const cookieJar = join(jarDir, "cookies.txt");
   const progress = opts.onProgress ?? (() => {});

@@ -23,9 +23,18 @@ party sizes are offered.
 | Fischer Vroni | https://reservierung.fischer-vroni.de/reservation |
 | Boandlkramerei | https://reservierung.boandlkramerei.bayern/ |
 | Münchener Stubn Festzelt | https://reservierung.muenchnerstubn-festzelt.de/ |
-| Schützen-Festzelt | https://reservierung.schuetzenfestzelt.com/ |
+| Armbrustschützen-Festzelt | https://reservierung.armbrustschuetzenzelt.de/reservierung |
+| Bräurosl Festzelt | https://reservierung.braeurosl.de/reservation |
+| Löwenbräu-Festzelt | https://reservierung.loewenbraeuzelt.de/reservierung |
+| Hacker Festzelt | https://reservierung.derhimmelderbayern.de/reservierung |
+| Augustiner Festhalle | https://reservierung.festhalle-augustiner.com/reservierung |
+| Schützen-Festzelt | https://reservierung.schuetzenfestzelt.com/reservation |
+| Festhalle Schottenhamel | https://reservierung.festhalle-schottenhamel.de/reservation |
+| Kufflers Weinzelt | https://reservierung.weinzelt.com/reservation |
 
 ## How it works
+
+Most portals use the Festzelt OS booking form (a Livewire/Filament component):
 
 1. **Load** the portal's booking page and read the Livewire snapshot + CSRF token.
 2. **Dates** are listed in the booking form's date select — only bookable dates appear.
@@ -33,6 +42,15 @@ party sizes are offered.
    `/livewire/update`) and reads the offered **booking lists** (time slots).
 4. For each booking list it selects it and reads the revealed **options**:
    seat-plan groups/areas, pax counts and start times.
+
+A few newer portals (Schützen-Festzelt, Festhalle Schottenhamel, Kufflers Weinzelt)
+are Nuxt SPAs without a server-rendered booking form. They expose a **Festzelt OS 2.0
+JSON API** (`https://<tent>-api.festzelt-os.com/lp`) that the scraper queries instead:
+
+1. `GET /guestlists` → available dates + time slots (shifts).
+2. `GET /guestlists/{uid}/definitions` → offered areas per slot.
+
+The API requires the portal's company UID via the `x-festzelt-os-Company` header.
 
 All requests go through the `curl` binary: the portals sit behind Cloudflare bot
 protection that rejects Node's TLS fingerprint, while curl with a browser user agent
