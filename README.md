@@ -31,6 +31,8 @@ party sizes are offered.
 | Schützen-Festzelt | https://reservierung.schuetzenfestzelt.com/reservation |
 | Festhalle Schottenhamel | https://reservierung.festhalle-schottenhamel.de/reservation |
 | Kufflers Weinzelt | https://reservierung.weinzelt.com/reservation |
+| Marstall Festzelt | https://reservierung.marstall-oktoberfest.de/reservation/ |
+| Käfer Wiesn-Schänke | https://wiesnresmittag.kaefer-wiesn.de/ |
 
 ## How it works
 
@@ -51,6 +53,17 @@ JSON API** (`https://<tent>-api.festzelt-os.com/lp`) that the scraper queries in
 2. `GET /guestlists/{uid}/definitions` → offered areas per slot.
 
 The API requires the portal's company UID via the `x-festzelt-os-Company` header.
+
+**Käfer Wiesn-Schänke** is a different booking system entirely (an Angular SPA backed
+by a custom "iman" JSON API on Azure, unrelated to Festzelt OS). Its scraper queries:
+
+1. `GET /api/slot` → every day × shift with the areas and table sizes that still
+   have availability (a slot is dropped once both areas are sold out).
+
+The scraper implementations are pluggable. Each `PortalConfig` selects one through
+its `scraper.provider` (or the legacy `api` field); the registry in `src/scraper.ts`
+maps provider keys to implementations. Adding another booking system is just
+implementing a runner (returning a `PortalAvailability`) and registering it there.
 
 All requests go through the `curl` binary: the portals sit behind Cloudflare bot
 protection that rejects Node's TLS fingerprint, while curl with a browser user agent

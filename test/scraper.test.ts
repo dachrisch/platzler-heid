@@ -122,4 +122,13 @@ describe("scrapePortal", () => {
     const result = await scrapePortal(portal, { throttleMs: 0 });
     expect(result.error).toContain("Cloudflare");
   });
+
+  it("resolves an unknown scraper provider to a graceful error", async () => {
+    const result = await scrapePortal(
+      { ...portal, scraper: { provider: "nope" as never, options: {} } },
+      { throttleMs: 0 },
+    );
+    expect(result.closed).toBe(true);
+    expect(result.error).toContain('unknown scraper provider "nope"');
+  });
 });
