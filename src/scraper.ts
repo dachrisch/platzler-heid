@@ -7,10 +7,12 @@ import type {
   DateAvailability,
   PortalAvailability,
   PortalConfig,
+  ScraperProvider,
   SelectOption,
 } from "./types.js";
 import { LivewireClient, parseSelectOptions } from "./livewire.js";
 import { scrapeFestzeltOs2 } from "./festzelt-os2.js";
+import { scrapeKaefer } from "./kaefer.js";
 
 export interface ScrapeOptions {
   throttleMs?: number;
@@ -23,31 +25,62 @@ export interface ScrapeOptions {
   onPortalResult?: (portal: PortalAvailability) => void;
 }
 
+export type ScraperRunner = (cfg: PortalConfig, opts: ScrapeOptions) => Promise<PortalAvailability>;
+
+/**
+ * Registry of scraper implementations. A portal selects one through its
+ * `scraper.provider` (or the legacy `api` field); unset portals default to the
+ * Festzelt OS Livewire scraper. Adding support for a new booking system is just
+ * implementing a runner and registering it here.
+ */
+export const SCRAPERS: Record<ScraperProvider, ScraperRunner> = {
+  "festzelt-os": scrapeFestzeltOsLivewire,
+  "festzelt-os-2": scrapeFestzeltOs2,
+  kaefer: scrapeKaefer,
+};
+
 function keepNonEmpty(options: SelectOption[]): SelectOption[] {
   return options.filter((o) => o.value !== "" && o.label !== "");
 }
 
 /**
- * Scrapes a single Festzelt OS portal:
- * 1. Loads the booking page and reads the available dates.
- * 2. For every date, selects it and reads the offered booking lists (time slots).
- * 3. For every booking list, selects it and reads the revealed options
- *    (seat-plan areas, pax counts, start times, ...).
+ * Scrapes a single portal by resolving its configured scraper from the registry.
+ * Falls back to the Festzelt OS 2.0 JSON API when `api` is set, and to the
+ * Festzelt OS Livewire booking form otherwise.
  */
 export async function scrapePortal(
   cfg: PortalConfig,
   opts: ScrapeOptions = {},
 ): Promise<PortalAvailability> {
-  if (cfg.api) {
-    return scrapeFestzeltOs2(cfg, {
-      throttleMs: opts.throttleMs,
-      maxRetries: opts.maxRetries,
-      maxDates: opts.maxDates,
-      concurrency: opts.concurrency,
-      onProgress: opts.onProgress,
-    });
+  const provider: ScraperProvider =
+    cfg.scraper?.provider ?? (cfg.api ? "festzelt-os-2" : "festzelt-os");
+  const runner = SCRAPERS[provider];
+  if (!runner) {
+    const result: PortalAvailability = {
+      portalId: cfg.id,
+      name: cfg.name,
+      url: cfg.url,
+      closed: true,
+      dates: [],
+      error: `unknown scraper provider "${provider}"`,
+    };
+    opts.onProgress?.(`${cfg.name}: unknown scraper provider "${provider}"`);
+    return result;
   }
+  return runner(cfg, opts);
+}
 
+/**
+ * Scrapes a Festzelt OS Livewire/Filament portal:
+ * 1. Loads the booking page and reads the available dates.
+ * 2. For every date, selects it and reads the offered booking lists (time slots).
+ * 3. For every booking list, selects it and reads the revealed options
+ *    (seat-plan areas, pax counts, start times, ...).
+ */
+async function scrapeFestzeltOsLivewire(
+  cfg: PortalConfig,
+  opts: ScrapeOptions = {},
+): Promise<PortalAvailability> {
   const jarDir = mkdtempSync(join(tmpdir(), "fza-jar-"));
   const cookieJar = join(jarDir, "cookies.txt");
   const progress = opts.onProgress ?? (() => {});

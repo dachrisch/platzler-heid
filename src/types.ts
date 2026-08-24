@@ -47,6 +47,29 @@ export interface FestzeltOs2ApiConfig {
   companyUid: string;
 }
 
+/** Options for the Käfer Wiesn-Schänke reservation API (Angular SPA backed by an Azure "iman" backend). */
+export interface KaeferApiConfig {
+  /** Base URL of the reservation API (e.g. https://app-mittagsreservierung-gwc-001.azurewebsites.net/). */
+  baseUrl: string;
+  /** `X-API-Key` header value (public, embedded in the portal's JS bundle). */
+  apiKey: string;
+  /** `App-Version` header value (default "1.0"). */
+  appVersion?: string;
+}
+
+/** Registry keys of the scraper implementations known to the app. */
+export type ScraperProvider = "festzelt-os" | "festzelt-os-2" | "kaefer";
+
+/**
+ * Explicitly selects a scraper implementation for a portal. The `provider` is
+ * resolved through the scraper registry in scraper.ts, and `options` carries
+ * provider-specific configuration.
+ */
+export interface ScraperConfig {
+  provider: ScraperProvider;
+  options?: Record<string, unknown>;
+}
+
 export interface PortalConfig {
   id: string;
   name: string;
@@ -58,4 +81,9 @@ export interface PortalConfig {
    * instead of the Livewire/Filament booking form.
    */
   api?: FestzeltOs2ApiConfig;
+  /**
+   * Explicit scraper selection for a portal. Takes precedence over `api`.
+   * Unset portals default to the Festzelt OS Livewire scraper.
+   */
+  scraper?: ScraperConfig;
 }

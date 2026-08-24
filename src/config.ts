@@ -108,6 +108,27 @@ export const PORTALS: PortalConfig[] = [
       companyUid: "FOSKUFW4711",
     },
   },
+  {
+    id: "marstall",
+    name: "Marstall Festzelt",
+    url: "https://reservierung.marstall-oktoberfest.de/reservation/",
+    api: {
+      baseUrl: "https://marstall-api.festzelt-os.com/lp",
+      companyUid: "J12J1KA",
+    },
+  },
+  {
+    id: "kaefer",
+    name: "Käfer Wiesn-Schänke",
+    url: "https://wiesnresmittag.kaefer-wiesn.de/",
+    scraper: {
+      provider: "kaefer",
+      options: {
+        baseUrl: "https://app-mittagsreservierung-gwc-001.azurewebsites.net/",
+        apiKey: "AASH97SDspfdjF8ASOF1poj248SDIF8IAsdpin91SFDUWEGKJsosbdB123947",
+      },
+    },
+  },
 ];
 
 export function getPortal(id: string): PortalConfig | undefined {
