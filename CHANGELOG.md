@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/dachrisch/platzler-heid/compare/v1.5.2...v1.6.0) (2026-08-25)
+
+
+### Features
+
+* confirm email address before activating subscription (double op… ([cbfc96a](https://github.com/dachrisch/platzler-heid/commit/cbfc96ada972676b309ef83d1df24e704f57c7ce))
+* confirm email address before activating subscription (double opt-in) ([8a391bf](https://github.com/dachrisch/platzler-heid/commit/8a391bf2074f157d5f4aa949ee5478307601ad5c))
+
 ## [1.5.2](https://github.com/dachrisch/platzler-heid/compare/v1.5.1...v1.5.2) (2026-08-25)
 
 
