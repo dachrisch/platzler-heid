@@ -158,7 +158,8 @@ function setSubscribeState(state) {
   }
 }
 
-subscribeBtn.addEventListener("click", () => {
+subscribeBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
   subscribePanel.hidden = !subscribePanel.hidden;
   if (!subscribePanel.hidden) openSubscribePanel();
 });
@@ -507,6 +508,7 @@ function initControls() {
 
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".dropdown")) closeAllDropdowns();
+    if (!e.target.closest(".subscribe-wrap")) subscribePanel.hidden = true;
   });
 }
 
