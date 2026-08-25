@@ -143,6 +143,21 @@ function openSubscribePanel() {
   subscribeEmail.focus();
 }
 
+function setSubscribeState(state) {
+  if (state === "active") {
+    subscribeLabel.textContent = "Aktiv ✓";
+    subscribeBtn.classList.add("active");
+  } else if (state === "pending") {
+    subscribeLabel.textContent = "Bestätigung ausstehend ✓";
+    subscribeBtn.classList.add("active");
+  } else {
+    subscribeLabel.textContent = "Benachrichtigen";
+    subscribeBtn.classList.remove("active");
+    localStorage.removeItem("subscribed");
+    localStorage.removeItem("subscribed-email");
+  }
+}
+
 subscribeBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   subscribePanel.hidden = !subscribePanel.hidden;
@@ -173,6 +188,7 @@ subscribeForm.addEventListener("submit", async (e) => {
     subscribeLabel.textContent = "Bestätigung ausstehend ✓";
     subscribeBtn.classList.add("active");
     localStorage.setItem("subscribed", "1");
+    localStorage.setItem("subscribed-email", subscribeEmail.value.trim().toLowerCase());
   } catch (err) {
     console.error(err);
     showSubscribeMsg("Abonnieren fehlgeschlagen — bitte erneut versuchen.", false);
@@ -430,6 +446,12 @@ function openStream() {
     updateRefreshButton();
     load();
   });
+  es.addEventListener("subscription-confirmed", (e) => {
+    const { email } = JSON.parse(e.data);
+    if (email && email === localStorage.getItem("subscribed-email")) {
+      setSubscribeState("active");
+    }
+  });
   es.addEventListener("error", () => {
     if (es.readyState === EventSource.CLOSED) {
       streamActive = false;
@@ -550,10 +572,31 @@ document.getElementById("refresh").addEventListener("click", async () => {
 readParams();
 
 // Reflect a persisted subscription (localStorage) in the button state.
-if (localStorage.getItem("subscribed") === "1") {
-  subscribeBtn.classList.add("active");
-  subscribeLabel.textContent = "Bestätigung ausstehend ✓";
+const subscribedEmail = localStorage.getItem("subscribed-email");
+if (subscribedEmail) {
+  setSubscribeState("pending");
+  refreshSubscriptionState();
+} else if (localStorage.getItem("subscribed") === "1") {
+  setSubscribeState("pending");
 }
+
+// Reconcile the button with the server-side double opt-in status, e.g. after
+// confirming via the link in the email or when the SSE event was missed.
+async function refreshSubscriptionState() {
+  const email = localStorage.getItem("subscribed-email");
+  if (!email) return;
+  try {
+    const res = await fetch(`/api/subscription-status?email=${encodeURIComponent(email)}`);
+    if (!res.ok) return;
+    const { status } = await res.json();
+    if (status === "active") setSubscribeState("active");
+    else if (status === "pending") setSubscribeState("pending");
+    else setSubscribeState("none");
+  } catch (err) {
+    console.error(err);
+  }
+}
+setInterval(refreshSubscriptionState, 30000);
 
 load();
 loadStatus();

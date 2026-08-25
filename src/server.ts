@@ -240,6 +240,8 @@ async function start(): Promise<void> {
   app.get("/api/confirm", (req, res) => {
     const token = String(req.query.token ?? "");
     const sub = subscribers.confirmByToken(token);
+    // Notify open dashboard tabs so the subscribe button can flip to "active".
+    if (sub) broadcast("subscription-confirmed", { email: sub.email });
     res.type("html").send(`<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><title>${sub ? "Bestätigt" : "Ungültiger Link"}</title></head>
 <body style="font-family:system-ui,sans-serif;padding:40px;text-align:center;color:#1c1917">
@@ -258,6 +260,18 @@ async function start(): Promise<void> {
 <h1>${removed ? "Du wurdest abgemeldet." : "Ungültiger Abmeldelink."}</h1>
 <p style="color:#78716c">${removed ? "Du erhältst ab jetzt keine E-Mail-Benachrichtigungen mehr." : ""}</p>
 </body></html>`);
+  });
+
+  // Lets the dashboard reconcile the subscribe button with the server-side
+  // double opt-in status (e.g. after confirming via the link in the email).
+  app.get("/api/subscription-status", (req, res) => {
+    const email = String(req.query.email ?? "").trim().toLowerCase();
+    if (!email) {
+      res.status(400).json({ error: "invalid email" });
+      return;
+    }
+    const sub = [...subscribers.list()].reverse().find((s) => s.email === email);
+    res.json({ email, status: sub ? sub.status : "none" });
   });
 
   app.post("/api/refresh", async (_req, res) => {
