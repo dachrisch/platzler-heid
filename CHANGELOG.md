@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.1](https://github.com/dachrisch/platzler-heid/compare/v1.6.0...v1.6.1) (2026-08-25)
+
+
+### Bug Fixes
+
+* dismiss subscribe panel on click outside ([082d361](https://github.com/dachrisch/platzler-heid/commit/082d36106777799a2d64e0ef902b7626afb68a1a))
+* dismiss subscribe panel on click outside ([fb11004](https://github.com/dachrisch/platzler-heid/commit/fb1100489fb37978883e59c9a9d94955e398933e))
+
 ## [1.6.0](https://github.com/dachrisch/platzler-heid/compare/v1.5.2...v1.6.0) (2026-08-25)
 
 
