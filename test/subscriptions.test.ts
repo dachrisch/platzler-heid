@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
+import { rmSync, writeFileSync } from "node:fs";
 import {
   SubscriberStore,
+  buildConfirmationEmail,
   buildNotificationEmail,
   diffOptions,
   filterToUrl,
@@ -195,7 +197,38 @@ describe("buildNotificationEmail", () => {
   });
 });
 
+describe("buildConfirmationEmail", () => {
+  it("builds subject, plain text and HTML with the confirm link", () => {
+    const email = buildConfirmationEmail({
+      filter: emptyFilter,
+      baseUrl: "https://example.test",
+      confirmToken: "confirm123",
+      token: "unsub123",
+    });
+    expect(email.subject).toContain("bestätige");
+    expect(email.text).toContain("https://example.test/api/confirm?token=confirm123");
+    expect(email.html).toContain("https://example.test/api/confirm?token=confirm123");
+    expect(email.text).toContain("https://example.test/api/unsubscribe?token=unsub123");
+  });
+});
+
 describe("SubscriberStore", () => {
+  it("creates pending subscriptions and activates them on confirm", () => {
+    const dir = import.meta.dirname + "/tmp-subscribers";
+    const file = dir + "/subscribers.json";
+    const store = new SubscriberStore(file);
+    const sub = store.add("du@beispiel.de", emptyFilter);
+    expect(sub.status).toBe("pending");
+    expect(store.getByConfirmToken(sub.confirmToken)?.email).toBe("du@beispiel.de");
+    expect(store.pendingByEmail("du@beispiel.de")?.id).toBe(sub.id);
+
+    const confirmed = store.confirmByToken(sub.confirmToken);
+    expect(confirmed?.status).toBe("active");
+    expect(store.getByConfirmToken(sub.confirmToken)?.status).toBe("active");
+    expect(store.confirmByToken("nope")).toBeUndefined();
+    store.removeByToken(sub.token);
+  });
+
   it("persists and removes subscriptions", () => {
     const dir = import.meta.dirname + "/tmp-subscribers";
     const file = dir + "/subscribers.json";
@@ -208,5 +241,25 @@ describe("SubscriberStore", () => {
     expect(reloaded.removeByToken(sub.token)).toBe(true);
     expect(reloaded.list()).toHaveLength(0);
     expect(reloaded.removeByToken(sub.token)).toBe(false);
+  });
+
+  it("backfills legacy subscriptions without a status as active", () => {
+    const dir = import.meta.dirname + "/tmp-subscribers";
+    const file = dir + "/legacy.json";
+    const legacy = [
+      {
+        id: "legacy-1",
+        email: "alt@beispiel.de",
+        token: "legacy-token",
+        filter: emptyFilter,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      },
+    ];
+    writeFileSync(file, JSON.stringify(legacy));
+    const store = new SubscriberStore(file);
+    const sub = store.list()[0];
+    expect(sub.status).toBe("active");
+    expect(sub.confirmToken).toBeTruthy();
+    rmSync(file);
   });
 });
