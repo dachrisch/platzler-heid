@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/dachrisch/platzler-heid/compare/v1.6.2...v1.6.3) (2026-08-25)
+
+
+### Bug Fixes
+
+* reflect email confirmation in subscribe button state ([8f64682](https://github.com/dachrisch/platzler-heid/commit/8f64682d6bfa3d6ab4b9f50819db0cc7158bc4ec))
+
 ## [1.6.2](https://github.com/dachrisch/platzler-heid/compare/v1.6.1...v1.6.2) (2026-08-25)
 
 
