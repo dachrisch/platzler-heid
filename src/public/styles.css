@@ -116,10 +116,14 @@ header h1 {
 
 /* ---------------- Email subscribe panel ---------------- */
 
+.subscribe-wrap {
+  position: relative;
+}
+
 .subscribe-panel {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
   width: min(360px, calc(100vw - 32px));
   background: var(--card);
   border: 1px solid var(--border);
