@@ -1,6 +1,6 @@
 {
   "name": "festzelt-availability",
-  "version": "1.5.2",
+  "version": "1.6.0",
   "description": "Aggregates and displays table reservation availability from Festzelt OS Oktoberfest portals (Ochsenbraterei and other tents).",
   "type": "module",
   "main": "src/server.ts",
