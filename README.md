@@ -115,8 +115,11 @@ been scraped (`3/10 Festzelte …`), instead of waiting for the whole run.
 Clicking **Benachrichtigen** lets you subscribe with your email address: your
 current filters are stored server-side and, whenever a scrape detects that a
 matching reservation became **newly available** or is **no longer available**,
-you receive an email with the changes and an unsubscribe link. Notifications are
-sent through SMTP; without SMTP configured the sender logs the email to stdout.
+you receive an email with the changes and an unsubscribe link. Subscriptions use
+**double opt-in**: after entering your email you get a confirmation mail, and the
+subscription only becomes active once you click the confirm link (required by law).
+Notifications are sent through SMTP; without SMTP configured the sender logs the
+email to stdout.
 
 ### Scheduled scraping
 
@@ -165,7 +168,8 @@ The server exposes:
 - `GET /api/status` — scrape status / cache age / progress / schedule interval
 - `GET /api/stream` — Server-Sent Events stream (`snapshot`, `started`, `portal`, `done`)
 - `POST /api/refresh` — trigger a scrape; results are broadcast to all SSE clients
-- `POST /api/subscribe` — subscribe an email address to filter changes (`{ "email": "...", "filter": {...} }`)
+- `POST /api/subscribe` — create a **pending** subscription (`{ "email": "...", "filter": {...} }`); a confirmation email is sent and the subscription only becomes active after the confirm link is opened
+- `GET /api/confirm?token=…` — activate a pending subscription via the link in the confirmation email (double opt-in)
 - `GET /api/unsubscribe?token=…` — remove a subscription via the link in the notification email
 
 SSE event flow during a refresh:

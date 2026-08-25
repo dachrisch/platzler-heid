@@ -165,8 +165,11 @@ subscribeForm.addEventListener("submit", async (e) => {
       body: JSON.stringify({ email: subscribeEmail.value, filter: currentFilter() }),
     });
     if (!res.ok) throw new Error("request failed");
-    showSubscribeMsg("Abonniert — du erhältst ab jetzt eine E-Mail bei Änderungen.", true);
-    subscribeLabel.textContent = "Abonniert ✓";
+    showSubscribeMsg(
+      "Bestätigungs-E-Mail gesendet — klicke den Link in der E-Mail, um dein Abonnement zu aktivieren.",
+      true,
+    );
+    subscribeLabel.textContent = "Bestätigung ausstehend ✓";
     subscribeBtn.classList.add("active");
     localStorage.setItem("subscribed", "1");
   } catch (err) {
@@ -547,7 +550,7 @@ readParams();
 // Reflect a persisted subscription (localStorage) in the button state.
 if (localStorage.getItem("subscribed") === "1") {
   subscribeBtn.classList.add("active");
-  subscribeLabel.textContent = "Abonniert ✓";
+  subscribeLabel.textContent = "Bestätigung ausstehend ✓";
 }
 
 load();

@@ -14,11 +14,20 @@ export interface SubscriptionFilter {
   search: string;
 }
 
+export type SubscriptionStatus = "pending" | "active";
+
 export interface Subscription {
   id: string;
   email: string;
   /** Unsubscribe token — embedded in the unsubscribe link of every email. */
   token: string;
+  /** Confirmation token — embedded in the double opt-in confirmation email. */
+  confirmToken: string;
+  /**
+   * Double opt-in status. Subscriptions start as "pending" and only become
+   * "active" once the user confirms their email address (required by law).
+   */
+  status: SubscriptionStatus;
   filter: SubscriptionFilter;
   createdAt: string;
 }
@@ -201,8 +210,29 @@ export function buildNotificationEmail(opts: {
 
 function escapeHtml(s: string): string {
   return String(s ?? "").replace(/[&<>"']/g, (c) => {
-    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c;
   });
+}
+
+export function buildConfirmationEmail(opts: {
+  filter: SubscriptionFilter;
+  baseUrl: string;
+  confirmToken: string;
+  token: string;
+}): NotificationEmail {
+  const { filter, baseUrl, confirmToken, token } = opts;
+  const confirmUrl = `${baseUrl}/api/confirm?token=${encodeURIComponent(confirmToken)}`;
+  const text = `Bestätige deine E-Mail-Adresse, um Benachrichtigungen zu aktivieren.\n\nDeine gespeicherten Filter: ${describeFilter(filter)}\n\nBestätigen: ${confirmUrl}\n\nSolltest du das nicht angefordert haben, kannst du diese E-Mail ignorieren.\n\nAbmelden: ${baseUrl}/api/unsubscribe?token=${token}`;
+  const html = `
+    <div style="font-family:system-ui,sans-serif;color:#1c1917">
+      <h2>Bestätige deine E-Mail-Adresse</h2>
+      <p style="color:#78716c">${escapeHtml(describeFilter(filter))}</p>
+      <p>Klicke auf den Button, um deine E-Mail-Benachrichtigung zu aktivieren:</p>
+      <p><a href="${confirmUrl}" style="display:inline-block;padding:10px 18px;background:#b91c1c;color:#fff;text-decoration:none;border-radius:6px">Abonnement bestätigen</a></p>
+      <p style="font-size:12px;color:#78716c">Falls du das nicht angefordert hast, kannst du diese E-Mail ignorieren. <a href="${baseUrl}/api/unsubscribe?token=${encodeURIComponent(token)}">Abmelden</a></p>
+    </div>`;
+
+  return { subject: "Bitte bestätige deine E-Mail-Adresse", text, html };
 }
 
 /* ---------------- Storage ---------------- */
@@ -218,10 +248,20 @@ export class SubscriberStore {
     if (!existsSync(this.file)) return [];
     try {
       const raw = JSON.parse(readFileSync(this.file, "utf8"));
-      return Array.isArray(raw) ? (raw as Subscription[]) : [];
+      return Array.isArray(raw) ? (raw as Subscription[]).map((s) => this.normalize(s)) : [];
     } catch {
       return [];
     }
+  }
+
+  /** Backfills fields for subscriptions persisted before double opt-in existed. */
+  private normalize(s: Subscription): Subscription {
+    return {
+      ...s,
+      // Legacy subscriptions were already opt-in at the time of writing.
+      status: s.status ?? "active",
+      confirmToken: s.confirmToken ?? randomUUID(),
+    };
   }
 
   private save(): void {
@@ -237,16 +277,37 @@ export class SubscriberStore {
     return this.subs.find((s) => s.token === token);
   }
 
+  getByConfirmToken(token: string): Subscription | undefined {
+    return this.subs.find((s) => s.confirmToken === token);
+  }
+
+  /** First pending subscription for the email (used to resend the confirmation). */
+  pendingByEmail(email: string): Subscription | undefined {
+    return this.subs.find((s) => s.email === email && s.status === "pending");
+  }
+
   add(email: string, filter: SubscriptionFilter): Subscription {
     const sub: Subscription = {
       id: randomUUID(),
       email,
       token: randomUUID(),
+      confirmToken: randomUUID(),
+      status: "pending",
       filter,
       createdAt: new Date().toISOString(),
     };
     this.subs.push(sub);
     this.save();
+    return sub;
+  }
+
+  /** Activates the subscription for a matching confirmation token (double opt-in). */
+  confirmByToken(token: string): Subscription | undefined {
+    const sub = this.getByConfirmToken(token);
+    if (sub) {
+      sub.status = "active";
+      this.save();
+    }
     return sub;
   }
 

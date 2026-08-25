@@ -9,6 +9,7 @@ import type { AvailabilitySnapshot, PortalAvailability } from "./types.js";
 import { createEmailSender, type EmailSender } from "./email.js";
 import {
   SubscriberStore,
+  buildConfirmationEmail,
   buildNotificationEmail,
   diffOptions,
   flatten,
@@ -167,6 +168,7 @@ function notifySubscribers(prev: AvailabilitySnapshot, cur: AvailabilitySnapshot
   const prevOptions = flatten(prev);
   const curOptions = flatten(cur);
   for (const sub of subscribers.list()) {
+    if (sub.status !== "active") continue;
     try {
       const diff = diffOptions(prevOptions, curOptions, sub.filter);
       if (!diff.added.length && !diff.removed.length) continue;
@@ -217,8 +219,34 @@ async function start(): Promise<void> {
       res.status(400).json({ error: "invalid email" });
       return;
     }
-    const sub = subscribers.add(email, normalizeFilter(req.body?.filter));
-    res.json({ id: sub.id });
+    const filter = normalizeFilter(req.body?.filter);
+    // Reuse a pending subscription for the same address so resubmitting resends
+    // the confirmation email instead of piling up duplicates.
+    const pending = subscribers.pendingByEmail(email);
+    if (pending) pending.filter = filter;
+    const sub = pending ?? subscribers.add(email, filter);
+    const { subject, text, html } = buildConfirmationEmail({
+      filter: sub.filter,
+      baseUrl: PUBLIC_BASE_URL,
+      confirmToken: sub.confirmToken,
+      token: sub.token,
+    });
+    emailSender.send(sub.email, subject, text, html).catch((err) => {
+      console.error(`Failed to send confirmation email to ${sub.email}:`, err);
+    });
+    res.json({ id: sub.id, status: "pending" });
+  });
+
+  app.get("/api/confirm", (req, res) => {
+    const token = String(req.query.token ?? "");
+    const sub = subscribers.confirmByToken(token);
+    res.type("html").send(`<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>${sub ? "Bestätigt" : "Ungültiger Link"}</title></head>
+<body style="font-family:system-ui,sans-serif;padding:40px;text-align:center;color:#1c1917">
+<h1>${sub ? "Abonnement bestätigt ✓" : "Ungültiger Bestätigungslink."}</h1>
+<p style="color:#78716c">${sub ? "Du erhältst ab jetzt eine E-Mail bei Änderungen an deinen gespeicherten Filtern." : ""}</p>
+<p><a href="${PUBLIC_BASE_URL}/">Zur Ansicht</a></p>
+</body></html>`);
   });
 
   app.get("/api/unsubscribe", (req, res) => {
