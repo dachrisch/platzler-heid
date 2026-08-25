@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.2](https://github.com/dachrisch/platzler-heid/compare/v1.5.1...v1.5.2) (2026-08-25)
+
+
+### Bug Fixes
+
+* open email subscribe dialog below subscribe button ([2b7b696](https://github.com/dachrisch/platzler-heid/commit/2b7b696b1fe5a35901fb16f7b24c1b56aaffa415))
+* open email subscribe dialog below subscribe button ([17234d3](https://github.com/dachrisch/platzler-heid/commit/17234d395406d2d3e3171ba6fab2f9158186f72c))
+
 ## [1.5.1](https://github.com/dachrisch/platzler-heid/compare/v1.5.0...v1.5.1) (2026-08-24)
 
 
