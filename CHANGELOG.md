@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.5](https://github.com/dachrisch/platzler-heid/compare/v1.6.4...v1.6.5) (2026-08-30)
+
+
+### Bug Fixes
+
+* **deps:** update dependency tsx to v4.23.13 ([#23](https://github.com/dachrisch/platzler-heid/issues/23)) ([5f99573](https://github.com/dachrisch/platzler-heid/commit/5f99573585970ca4e8c39a0a03422c264106621f))
+
 ## [1.6.4](https://github.com/dachrisch/platzler-heid/compare/v1.6.3...v1.6.4) (2026-08-27)
 
 
