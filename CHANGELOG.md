@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.19](https://github.com/dachrisch/platzler-heid/compare/v1.6.18...v1.6.19) (2026-09-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @types/node to v24.13.5 ([#54](https://github.com/dachrisch/platzler-heid/issues/54)) ([072254a](https://github.com/dachrisch/platzler-heid/commit/072254a85da8d13843737b48ad9deda01d7d5b81))
+* **deps:** update dependency @types/nodemailer to v8.0.2 ([#55](https://github.com/dachrisch/platzler-heid/issues/55)) ([12d5bcf](https://github.com/dachrisch/platzler-heid/commit/12d5bcf68f028b3a1b3a09ec0a86c3cba90a79a5))
+
 ## [1.6.18](https://github.com/dachrisch/platzler-heid/compare/v1.6.17...v1.6.18) (2026-09-15)
 
 
