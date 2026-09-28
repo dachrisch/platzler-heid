@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.27](https://github.com/dachrisch/platzler-heid/compare/v1.6.26...v1.6.27) (2026-09-28)
+
+
+### Bug Fixes
+
+* **deps:** update dependency nodemailer to v10.0.12 ([#71](https://github.com/dachrisch/platzler-heid/issues/71)) ([8316d2b](https://github.com/dachrisch/platzler-heid/commit/8316d2b4212c34e93461f3ceb612ff691ae41439))
+* **deps:** update dependency oxlint to v1.86.0 ([#72](https://github.com/dachrisch/platzler-heid/issues/72)) ([dff9882](https://github.com/dachrisch/platzler-heid/commit/dff98823234fa7053a1a15036e88e921e03a1b48))
+
 ## [1.6.26](https://github.com/dachrisch/platzler-heid/compare/v1.6.25...v1.6.26) (2026-09-27)
 
 
