@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.34](https://github.com/dachrisch/platzler-heid/compare/v1.6.33...v1.6.34) (2026-10-09)
+
+
+### Bug Fixes
+
+* **deps:** update dependency express to v5.3.0 ([#87](https://github.com/dachrisch/platzler-heid/issues/87)) ([31ad4a0](https://github.com/dachrisch/platzler-heid/commit/31ad4a09aa7b7acf6e0e4c663e0ea1ffa6aed110))
+
 ## [1.6.33](https://github.com/dachrisch/platzler-heid/compare/v1.6.32...v1.6.33) (2026-10-07)
 
 
