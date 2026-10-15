@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.40](https://github.com/dachrisch/platzler-heid/compare/v1.6.39...v1.6.40) (2026-10-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency vitest to v5.0.5 ([#99](https://github.com/dachrisch/platzler-heid/issues/99)) ([d2ffbc8](https://github.com/dachrisch/platzler-heid/commit/d2ffbc840453f757dcae045cb1a474e371956de1))
+
 ## [1.6.39](https://github.com/dachrisch/platzler-heid/compare/v1.6.38...v1.6.39) (2026-10-14)
 
 
