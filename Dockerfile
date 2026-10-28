@@ -6,7 +6,7 @@
 # curl is installed in the runtime image.
 
 # ---- deps: install all dependencies (incl. dev) ----
-FROM node:24-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -17,13 +17,13 @@ COPY . .
 RUN npm run build
 
 # ---- prod-deps: production-only dependencies (no typescript/vitest/etc) ----
-FROM node:24-alpine AS prod-deps
+FROM node:26-alpine AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 # ---- runtime: slim image with only what's needed to run the server ----
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
