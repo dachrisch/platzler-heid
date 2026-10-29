@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.0.0",
     "@types/nodemailer": "^8.0.1",
     "esbuild": "^0.28.0",
     "oxlint": "^1.73.0",
