@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.55](https://github.com/dachrisch/platzler-heid/compare/v1.6.54...v1.6.55) (2026-11-07)
+
+
+### Bug Fixes
+
+* **deps:** update dependency nodemailer to v10.4.0 ([#129](https://github.com/dachrisch/platzler-heid/issues/129)) ([9654a1f](https://github.com/dachrisch/platzler-heid/commit/9654a1f0b015564add0b3435a0ecada2744f2915))
+
 ## [1.6.54](https://github.com/dachrisch/platzler-heid/compare/v1.6.53...v1.6.54) (2026-11-06)
 
 
