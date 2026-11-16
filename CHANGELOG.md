@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.59](https://github.com/dachrisch/platzler-heid/compare/v1.6.58...v1.6.59) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** update dependency oxlint to v1.94.0 ([#137](https://github.com/dachrisch/platzler-heid/issues/137)) ([86f019f](https://github.com/dachrisch/platzler-heid/commit/86f019f5219d57533b4e525a4e6855cc99b26534))
+
 ## [1.6.58](https://github.com/dachrisch/platzler-heid/compare/v1.6.57...v1.6.58) (2026-11-16)
 
 
