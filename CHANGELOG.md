@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.66](https://github.com/dachrisch/platzler-heid/compare/v1.6.65...v1.6.66) (2026-11-26)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @types/node to v26.6.11 ([#152](https://github.com/dachrisch/platzler-heid/issues/152)) ([34ac52d](https://github.com/dachrisch/platzler-heid/commit/34ac52df5907a3f6f9beade59fc72eb4835af97d))
+
 ## [1.6.65](https://github.com/dachrisch/platzler-heid/compare/v1.6.64...v1.6.65) (2026-11-25)
 
 
